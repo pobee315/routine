@@ -12,7 +12,7 @@
 <title>주간 루틴 트래커</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
-  :root { --bg:#0f0f11; --surface:#18181c; --surface2:#222228; --border:#2e2e38; --text:#e8e8f0; --text-dim:#6b6b80; }
+  :root { --bg:#0f0f11; --surface:#18181c; --surface2:#222228; --border:#2e2e38; --text:#e8e8f0; --text-dim:#6b6b80; --memo-color:#e9d5ff; }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; min-height:100vh; padding:16px; padding-top:calc(16px + env(safe-area-inset-top)); padding-bottom:calc(40px + env(safe-area-inset-bottom)); }
 
@@ -26,6 +26,10 @@
   .cal-btn .cal-icon { font-size:13px; line-height:1; }
   .cal-btn .cal-date { font-size:12px; color:var(--text); }
 
+  /* 오늘 달력 메모 미리보기 */
+  .today-cal-memo { padding:8px 0 0; margin-bottom:0; }
+  .today-cal-memo-text { font-size:12px; color:var(--memo-color); padding:6px 10px; background:rgba(201,184,112,0.08); border-left:2px solid var(--memo-color); border-radius:0 6px 6px 0; line-height:1.4; }
+
   /* 체크리스트 */
   .checklist-wrap { padding:10px 0 14px; border-bottom:1px solid var(--border); margin-bottom:20px; }
   .checklist-items { display:flex; flex-direction:column; gap:4px; margin-bottom:6px; }
@@ -36,7 +40,6 @@
   .check-label { font-size:13px; color:var(--text); flex:1; cursor:pointer; transition:color .15s; }
   .check-label.done { color:#44445a; text-decoration:line-through; }
   .check-delete { background:none; border:none; color:var(--border); font-size:14px; cursor:pointer; padding:0 2px; line-height:1; flex-shrink:0; }
-  .check-delete:hover { color:var(--text-dim); }
   .checklist-input-row { display:flex; gap:6px; }
   .checklist-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:13px; padding:6px 10px; outline:none; }
   .checklist-input::placeholder { color:#44445a; }
@@ -49,19 +52,13 @@
   .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
   .item-name { font-size:14px; font-weight:500; flex:1; }
   .item-time { font-family:'DM Mono',monospace; font-size:12px; color:var(--text-dim); }
-
   .bar-wrap { margin:4px 14px 8px; background:var(--surface2); border-radius:4px; height:6px; overflow:hidden; }
   .bar-fill { height:100%; border-radius:4px; transition:width .4s ease; }
-
-  /* 메모 — 진행바 바로 아래 */
   .item-memo { margin:0 14px 8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-family:'Noto Sans KR',sans-serif; font-size:12px; color:var(--text-dim); width:calc(100% - 28px); outline:none; resize:none; height:32px; line-height:1.4; }
   .item-memo::placeholder { color:#44445a; }
   .item-memo:focus { border-color:#44445a; color:var(--text); }
-
   .item-meta { display:flex; align-items:center; justify-content:space-between; padding:0 14px 8px; }
   .goal-label { font-size:11px; color:var(--text-dim); }
-
-  /* 버튼 3개 — 우측 정렬 */
   .item-actions { display:flex; justify-content:flex-end; align-items:center; gap:6px; padding:0 14px 12px; }
   .timer-live { flex:1; font-family:'DM Mono',monospace; font-size:11px; color:var(--text-dim); display:none; }
   .timer-live.active { display:block; }
@@ -91,26 +88,44 @@
   .cal-overlay.open { opacity:1; pointer-events:all; }
   .cal-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px 16px 0 0; padding:20px 16px 36px; width:100%; max-width:480px; transform:translateY(30px); transition:transform .25s ease; touch-action:pan-y; }
   .cal-overlay.open .cal-modal { transform:translateY(0); }
-  .cal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .cal-nav-btn { background:none; border:1px solid var(--border); color:var(--text-dim); width:28px; height:28px; border-radius:6px; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  .cal-title { font-size:14px; font-weight:500; color:var(--text); font-family:'DM Mono',monospace; }
-  .cal-close { background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; }
+  .cal-header { display:flex; align-items:center; gap:4px; margin-bottom:14px; }
+  .cal-nav-btn { background:none; border:1px solid var(--border); color:var(--text-dim); width:28px; height:28px; border-radius:6px; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cal-title { font-size:14px; font-weight:500; color:var(--text); font-family:'DM Mono',monospace; flex:1; text-align:center; }
+  .cal-memo-add-btn { background:none; border:1px solid var(--border); color:var(--text-dim); width:28px; height:28px; border-radius:6px; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cal-close { background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; width:28px; height:28px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 
   .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
   .cal-day-label { font-size:10px; color:var(--text-dim); text-align:center; padding-bottom:8px; }
   .cal-day-label.holiday { color:#f87171; }
-
-  .cal-cell { text-align:center; padding:3px 1px 2px; border-radius:4px; }
+  .cal-cell { text-align:center; padding:3px 1px 2px; border-radius:4px; cursor:pointer; }
   .cal-num { font-size:12px; color:var(--text-dim); line-height:20px; display:flex; align-items:center; justify-content:center; height:20px; border-radius:50%; margin:0 auto; width:20px; }
   .cal-cell.in-week .cal-num { color:var(--text); font-weight:500; background:var(--surface2); border-radius:4px; width:100%; }
   .cal-cell.today .cal-num { background:var(--text); color:var(--bg); font-weight:700; border-radius:50%; width:20px; }
   .cal-cell.holiday .cal-num { color:#f87171; }
   .cal-cell.in-week.holiday .cal-num { color:#f87171; }
+  .cal-cell.has-memo .cal-num { color:var(--memo-color); font-weight:700; }
+  .cal-cell.in-week.has-memo .cal-num { color:var(--memo-color); }
+  .cal-cell.today.has-memo .cal-num { background:var(--memo-color); color:var(--bg); }
 
-  /* 주간 게이지 바 — 전체 너비 */
   .cal-week-bars { grid-column:1 / -1; display:flex; flex-direction:column; gap:2px; margin:2px 0 6px; padding:0 1px; }
   .cal-bar-row { height:3px; border-radius:2px; background:var(--surface2); overflow:hidden; }
   .cal-bar-fill { height:100%; border-radius:2px; }
+
+  /* 달력 메모 입력 팝업 */
+  .cal-memo-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:flex-end; justify-content:center; z-index:200; opacity:0; pointer-events:none; transition:opacity .2s; }
+  .cal-memo-overlay.open { opacity:1; pointer-events:all; }
+  .cal-memo-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px 16px 0 0; padding:20px 20px 36px; width:100%; max-width:480px; transform:translateY(30px); transition:transform .25s ease; }
+  .cal-memo-overlay.open .cal-memo-modal { transform:translateY(0); }
+  .cal-memo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .cal-memo-title { font-size:13px; color:var(--text-dim); font-family:'DM Mono',monospace; }
+  .cal-memo-close { background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; }
+  .cal-memo-textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:14px; padding:10px 12px; outline:none; resize:none; height:80px; line-height:1.6; margin-bottom:10px; }
+  .cal-memo-textarea::placeholder { color:#44445a; }
+  .cal-memo-textarea:focus { border-color:#555; }
+  .cal-memo-btns { display:flex; gap:8px; }
+  .cal-memo-save { flex:1; padding:10px; border-radius:8px; border:none; background:var(--text); color:var(--bg); font-size:13px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; }
+  .cal-memo-del { padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:transparent; color:#f87171; font-size:13px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; }
+  .cal-memo-cancel { padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-dim); font-size:13px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; }
 
   .reset-btn { display:block; margin:20px auto 0; background:transparent; border:1px solid var(--border); color:var(--text-dim); font-family:'Noto Sans KR',sans-serif; font-size:12px; padding:8px 20px; border-radius:20px; cursor:pointer; }
 </style>
@@ -128,6 +143,9 @@
     </div>
   </div>
 </header>
+
+<!-- 오늘 달력 메모 미리보기 -->
+<div id="today-cal-memo-wrap"></div>
 
 <!-- 일일 체크리스트 -->
 <div class="checklist-wrap">
@@ -164,9 +182,26 @@
       <button class="cal-nav-btn" onclick="shiftCalMonth(-1)">‹</button>
       <span class="cal-title" id="cal-title"></span>
       <button class="cal-nav-btn" onclick="shiftCalMonth(1)">›</button>
+      <button class="cal-memo-add-btn" onclick="openCalMemo(null)" title="메모 추가">+</button>
       <button class="cal-close" onclick="closeCal()">✕</button>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
+  </div>
+</div>
+
+<!-- 달력 메모 입력 팝업 -->
+<div class="cal-memo-overlay" id="cal-memo-overlay" onclick="closeCalMemoOutside(event)">
+  <div class="cal-memo-modal">
+    <div class="cal-memo-header">
+      <span class="cal-memo-title" id="cal-memo-title"></span>
+      <button class="cal-memo-close" onclick="closeCalMemo()">✕</button>
+    </div>
+    <textarea class="cal-memo-textarea" id="cal-memo-textarea" placeholder="이 날의 메모를 입력하세요..."></textarea>
+    <div class="cal-memo-btns">
+      <button class="cal-memo-cancel" onclick="closeCalMemo()">취소</button>
+      <button class="cal-memo-del" id="cal-memo-del" onclick="deleteCalMemo()" style="display:none">삭제</button>
+      <button class="cal-memo-save" onclick="saveCalMemo()">저장</button>
+    </div>
   </div>
 </div>
 
@@ -179,36 +214,19 @@ const ITEMS = [
   { id:'gym',   name:'헬스',             color:'#f97316', goalMin:180, memo:false },
 ];
 
-// 한국 공휴일 (고정 + 2024~2026 음력 기반 양력 변환)
 const HOLIDAYS = new Set([
-  // 고정 공휴일
   '0101','0301','0505','0606','0815','1003','1009','1225',
-  // 일요일 (매주)
-  // 설날 연휴 2025
-  '20250128','20250129','20250130',
-  // 어린이날 대체 2025
-  '20250506',
-  // 석가탄신일 2025
-  '20250505',
-  // 추석 연휴 2025
+  '20250128','20250129','20250130','20250506',
   '20250906','20250907','20250908',
-  // 설날 연휴 2026
-  '20260216','20260217','20260218',
-  // 석가탄신일 2026
-  '20260524',
-  // 추석 연휴 2026
+  '20260216','20260217','20260218','20260524',
   '20260924','20260925','20260926',
-  // 설날 연휴 2024
-  '20240209','20240210','20240212',
-  // 석가탄신일 2024
-  '20240515',
-  // 추석 연휴 2024
+  '20240209','20240210','20240212','20240515',
   '20240916','20240917','20240918',
 ]);
 
 function isHoliday(date) {
   const d = new Date(date);
-  if (d.getDay() === 0) return true; // 일요일
+  if (d.getDay() === 0) return true;
   const full = d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
   const mmdd = String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
   return HOLIDAYS.has(full) || HOLIDAYS.has(mmdd);
@@ -238,15 +256,16 @@ function getWeekKeyForMonday(mon) {
   return 'week_'+mon.getFullYear()+String(mon.getMonth()+1).padStart(2,'0')+String(mon.getDate()).padStart(2,'0');
 }
 
+function getSundayOfDate(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
 function getMondayOfDate(date) {
   const d = new Date(date); d.setHours(0,0,0,0);
   const day = d.getDay();
   d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-  return d;
-}
-function getSundayOfDate(date) {
-  const d = new Date(date); d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay()); // 일요일로
   return d;
 }
 
@@ -286,6 +305,74 @@ function saveMemo(id, text) {
   saveData(data);
 }
 
+// ── 달력 날짜별 메모 ──
+function dateToKey(date) {
+  const d = new Date(date);
+  return 'calmemo_'+d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+}
+function getCalMemo(date) {
+  try { return localStorage.getItem(dateToKey(date)) || ''; } catch(e) { return ''; }
+}
+function setCalMemo(date, text) {
+  try {
+    if (text.trim()) localStorage.setItem(dateToKey(date), text);
+    else localStorage.removeItem(dateToKey(date));
+  } catch(e) {}
+}
+
+// 오늘 달력 메모 미리보기
+function renderTodayCalMemo() {
+  const today = new Date();
+  const memo = getCalMemo(today);
+  const wrap = document.getElementById('today-cal-memo-wrap');
+  if (memo) {
+    wrap.innerHTML = '<div class="today-cal-memo"><div class="today-cal-memo-text">📝 ' + memo + '</div></div>';
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+// 달력 메모 입력 팝업
+let calMemoDate = null;
+
+function openCalMemo(date) {
+  // date가 null이면 오늘
+  calMemoDate = date || new Date();
+  const d = calMemoDate;
+  const label = d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일';
+  document.getElementById('cal-memo-title').textContent = label;
+  const existing = getCalMemo(d);
+  document.getElementById('cal-memo-textarea').value = existing;
+  document.getElementById('cal-memo-del').style.display = existing ? 'block' : 'none';
+  document.getElementById('cal-memo-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('cal-memo-textarea').focus(), 200);
+}
+
+function closeCalMemo() {
+  document.getElementById('cal-memo-overlay').classList.remove('open');
+  calMemoDate = null;
+}
+
+function closeCalMemoOutside(e) {
+  if (e.target === document.getElementById('cal-memo-overlay')) closeCalMemo();
+}
+
+function saveCalMemo() {
+  const text = document.getElementById('cal-memo-textarea').value.trim();
+  setCalMemo(calMemoDate, text);
+  closeCalMemo();
+  renderCal();
+  renderTodayCalMemo();
+}
+
+function deleteCalMemo() {
+  setCalMemo(calMemoDate, '');
+  closeCalMemo();
+  renderCal();
+  renderTodayCalMemo();
+}
+
+// 타이머
 const timers = {};
 
 function fmtTime(min) {
@@ -390,15 +477,12 @@ function renderCal(){
   const today=new Date(); today.setHours(0,0,0,0);
   const firstDayOfMonth=new Date(calYear,calMonth,1);
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
-
-  // 현재 선택 주
   const curMon=getMonday(weekOffset);
   const curSun=new Date(curMon); curSun.setDate(curSun.getDate()+6);
 
   const grid=document.getElementById('cal-grid');
   grid.innerHTML='';
 
-  // 요일 헤더 — 월~일
   ['일','월','화','수','목','금','토'].forEach((l,i)=>{
     const el=document.createElement('div');
     el.className='cal-day-label'+(i===0?' holiday':'');
@@ -406,19 +490,17 @@ function renderCal(){
     grid.appendChild(el);
   });
 
-  // 이 달에 나오는 주 목록 (월요일 기준)
   const firstSun=getSundayOfDate(firstDayOfMonth);
   const lastDayOfMonth=new Date(calYear,calMonth,daysInMonth);
   const lastSun=getSundayOfDate(lastDayOfMonth);
 
   const cur=new Date(firstSun);
   while(cur<=lastSun){
-    const sun=new Date(cur); // 주의 일요일
-    const mon=new Date(cur); mon.setDate(mon.getDate()+1); // 그 주의 월요일
+    const sun=new Date(cur);
+    const mon=new Date(cur); mon.setDate(mon.getDate()+1);
     const wKey=getWeekKeyForMonday(mon);
     const wData=loadDataForKey(wKey);
 
-    // 일~토 7칸
     for(let w=0;w<7;w++){
       const cellDate=new Date(sun); cellDate.setDate(cellDate.getDate()+w);
       const cell=document.createElement('div');
@@ -428,16 +510,20 @@ function renderCal(){
         if(cellDate>=curMon&&cellDate<=curSun) cell.classList.add('in-week');
         if(cellDate.getTime()===today.getTime()) cell.classList.add('today');
         if(isHoliday(cellDate)) cell.classList.add('holiday');
+        const hasMemo = !!getCalMemo(cellDate);
+        if(hasMemo) cell.classList.add('has-memo');
 
         const numEl=document.createElement('div');
         numEl.className='cal-num';
         numEl.textContent=cellDate.getDate();
         cell.appendChild(numEl);
+
+        const captured=new Date(cellDate);
+        cell.addEventListener('click', ()=>openCalMemo(captured));
       }
       grid.appendChild(cell);
     }
 
-    // 주간 게이지 바 (전체 너비)
     const barsEl=document.createElement('div');
     barsEl.className='cal-week-bars';
     ITEMS.forEach(item=>{
@@ -456,7 +542,6 @@ function renderCal(){
       barsEl.appendChild(rowEl);
     });
     grid.appendChild(barsEl);
-
     cur.setDate(cur.getDate()+7);
   }
 }
@@ -480,14 +565,11 @@ function render(){
     const pct=Math.min(100,Math.round((min/item.goalMin)*100));
     const isRunning=!!timers[item.id];
     const memo=getMemo(item.id);
-
     const card=document.createElement('div');
     card.className='item-card'; card.dataset.id=item.id;
-
     const memoHtml=item.memo
       ?'<textarea class="item-memo" placeholder="이번 주 메모..." onchange="saveMemo(\''+item.id+'\',this.value)" onblur="saveMemo(\''+item.id+'\',this.value)">'+memo+'</textarea>'
       :'';
-
     card.innerHTML=
       '<div class="item-header">'+
         '<div class="dot" style="background:'+item.color+'"></div>'+
@@ -508,12 +590,11 @@ function render(){
         '<button class="btn btn-add" onclick="openModal(\''+item.id+'\',\'add\')">+</button>'+
         '<button class="btn btn-minus" onclick="openModal(\''+item.id+'\',\'sub\')">−</button>'+
       '</div>';
-
     container.appendChild(card);
   });
 }
 
-// ── 체크리스트 ──
+// 체크리스트
 const CHECKLIST_KEY = 'checklist_persistent';
 function loadChecklist() {
   try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY)) || []; } catch(e) { return []; }
@@ -560,17 +641,19 @@ function deleteCheck(idx) {
   renderChecklist();
 }
 
-// 엔터로 추가
 document.getElementById('checklist-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') addCheckItem();
 });
+
 document.getElementById('week-label').textContent=getWeekLabel(0);
 updateCalBtn();
+renderTodayCalMemo();
 renderChecklist();
 render();
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&document.getElementById('modal').classList.contains('open')) confirmManual();
+  if(e.key==='Enter'&&document.getElementById('cal-memo-overlay').classList.contains('open')&&e.metaKey) saveCalMemo();
 });
 </script>
 </body>
