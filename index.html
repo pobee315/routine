@@ -13,13 +13,32 @@
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; min-height:100vh; padding:16px; padding-top:calc(16px + env(safe-area-inset-top)); padding-bottom:calc(40px + env(safe-area-inset-bottom)); }
 
-  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0; padding-bottom:14px; border-bottom:1px solid var(--border); }
   h1 { font-size:15px; font-weight:500; letter-spacing:.05em; color:var(--text-dim); text-transform:uppercase; }
   .header-right { display:flex; align-items:center; gap:8px; }
   .week-nav { display:flex; align-items:center; gap:6px; }
   .week-label { font-family:'DM Mono',monospace; font-size:12px; color:var(--text-dim); }
   .week-btn { background:none; border:1px solid var(--border); color:var(--text-dim); width:26px; height:26px; border-radius:6px; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  .cal-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text); height:26px; padding:0 8px; border-radius:6px; font-family:'DM Mono',monospace; font-size:11px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:4px; letter-spacing:.05em; }
+  .cal-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text); height:26px; padding:0 8px; border-radius:6px; font-family:'DM Mono',monospace; font-size:12px; font-weight:500; cursor:pointer; display:flex; align-items:center; gap:3px; letter-spacing:.03em; white-space:nowrap; }
+  .cal-btn .cal-icon { font-size:13px; line-height:1; }
+  .cal-btn .cal-date { font-size:12px; color:var(--text); }
+
+  /* 체크리스트 */
+  .checklist-wrap { padding:10px 0 14px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+  .checklist-items { display:flex; flex-direction:column; gap:4px; margin-bottom:6px; }
+  .check-row { display:flex; align-items:center; gap:8px; }
+  .check-box { width:16px; height:16px; border-radius:4px; border:1.5px solid var(--border); background:transparent; flex-shrink:0; cursor:pointer; appearance:none; -webkit-appearance:none; transition:background .15s, border-color .15s; position:relative; }
+  .check-box:checked { background:var(--text-dim); border-color:var(--text-dim); }
+  .check-box:checked::after { content:'✓'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:10px; color:var(--bg); }
+  .check-label { font-size:13px; color:var(--text); flex:1; cursor:pointer; transition:color .15s; }
+  .check-label.done { color:#44445a; text-decoration:line-through; }
+  .check-delete { background:none; border:none; color:var(--border); font-size:14px; cursor:pointer; padding:0 2px; line-height:1; flex-shrink:0; }
+  .check-delete:hover { color:var(--text-dim); }
+  .checklist-input-row { display:flex; gap:6px; }
+  .checklist-input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:13px; padding:6px 10px; outline:none; }
+  .checklist-input::placeholder { color:#44445a; }
+  .checklist-input:focus { border-color:#44445a; }
+  .checklist-add-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; white-space:nowrap; }
 
   .items { display:flex; flex-direction:column; gap:10px; }
   .item-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
@@ -98,7 +117,7 @@
 <header>
   <h1>주간 루틴</h1>
   <div class="header-right">
-    <button class="cal-btn" id="cal-btn" onclick="openCal()"></button>
+    <button class="cal-btn" id="cal-btn" onclick="openCal()"><span class="cal-icon">📅</span><span class="cal-date" id="cal-btn-date"></span></button>
     <div class="week-nav">
       <button class="week-btn" onclick="changeWeek(-1)">‹</button>
       <span class="week-label" id="week-label">이번 주</span>
@@ -106,6 +125,15 @@
     </div>
   </div>
 </header>
+
+<!-- 일일 체크리스트 -->
+<div class="checklist-wrap">
+  <div class="checklist-items" id="checklist-items"></div>
+  <div class="checklist-input-row">
+    <input class="checklist-input" id="checklist-input" placeholder="할 일 추가..." maxlength="60">
+    <button class="checklist-add-btn" onclick="addCheckItem()">+ 추가</button>
+  </div>
+</div>
 
 <div class="items" id="items-container"></div>
 <button class="reset-btn" onclick="confirmReset()">이번 주 초기화</button>
@@ -141,11 +169,11 @@
 
 <script>
 const ITEMS = [
-  { id:'book',  name:'독서',             color:'#60a5fa', goalMin:300, memo:true  },
-  { id:'gym',   name:'헬스',             color:'#f97316', goalMin:180, memo:false },
-  { id:'study', name:'일본어 / 파이썬',  color:'#a78bfa', goalMin:240, memo:true  },
   { id:'aipot', name:'AI-POT / 명리학', color:'#34d399', goalMin:600, memo:true  },
   { id:'aicha', name:'AI cha / 정보수집',color:'#fb7185', goalMin:600, memo:true  },
+  { id:'book',  name:'독서',             color:'#60a5fa', goalMin:300, memo:true  },
+  { id:'study', name:'일본어 / 파이썬',  color:'#a78bfa', goalMin:240, memo:true  },
+  { id:'gym',   name:'헬스',             color:'#f97316', goalMin:180, memo:false },
 ];
 
 // 한국 공휴일 (고정 + 2024~2026 음력 기반 양력 변환)
@@ -189,7 +217,7 @@ function updateCalBtn() {
   const n = new Date();
   const mm = String(n.getMonth()+1).padStart(2,'0');
   const dd = String(n.getDate()).padStart(2,'0');
-  document.getElementById('cal-btn').innerHTML = '📅 ' + mm + dd;
+  document.getElementById('cal-btn-date').textContent = mm + dd;
 }
 
 function getMonday(offset) {
@@ -430,7 +458,6 @@ function renderCal(){
   }
 }
 
-// 스와이프
 (function(){
   let startX=0;
   const el=document.getElementById('cal-modal');
@@ -483,8 +510,60 @@ function render(){
   });
 }
 
-updateCalBtn();
+// ── 체크리스트 ──
+const CHECKLIST_KEY = 'checklist_persistent';
+function loadChecklist() {
+  try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY)) || []; } catch(e) { return []; }
+}
+function saveChecklist(items) {
+  try { localStorage.setItem(CHECKLIST_KEY, JSON.stringify(items)); } catch(e) {}
+}
+
+function renderChecklist() {
+  const items = loadChecklist();
+  const container = document.getElementById('checklist-items');
+  container.innerHTML = '';
+  items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'check-row';
+    row.innerHTML =
+      '<input type="checkbox" class="check-box" '+(item.done?'checked':'')+' onchange="toggleCheck('+idx+', this.checked)">'+
+      '<span class="check-label'+(item.done?' done':'')+'" onclick="toggleCheck('+idx+', '+(item.done?'false':'true')+')">'+item.text+'</span>'+
+      '<button class="check-delete" onclick="deleteCheck('+idx+')">✕</button>';
+    container.appendChild(row);
+  });
+}
+
+function addCheckItem() {
+  const input = document.getElementById('checklist-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const items = loadChecklist();
+  items.push({ text, done: false });
+  saveChecklist(items);
+  input.value = '';
+  renderChecklist();
+}
+
+function toggleCheck(idx, done) {
+  const items = loadChecklist();
+  if (items[idx]) { items[idx].done = done; saveChecklist(items); renderChecklist(); }
+}
+
+function deleteCheck(idx) {
+  const items = loadChecklist();
+  items.splice(idx, 1);
+  saveChecklist(items);
+  renderChecklist();
+}
+
+// 엔터로 추가
+document.getElementById('checklist-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addCheckItem();
+});
 document.getElementById('week-label').textContent=getWeekLabel(0);
+updateCalBtn();
+renderChecklist();
 render();
 
 document.addEventListener('keydown',e=>{
